@@ -5,6 +5,7 @@ export async function prepareGlassesImage(glasses: Glasses) {
   if (!glasses.imageUrl)
     throw new Error("Choose glasses with an uploaded product photo.");
   const image = new window.Image();
+  image.crossOrigin = "anonymous";
   image.src = glasses.imageUrl;
   await image.decode();
   if (image.width * image.height > 20000000)

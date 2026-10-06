@@ -8,10 +8,12 @@ export default function AdminPanel({
   authenticated,
   items,
   configured,
+  storageError,
 }: {
   authenticated: boolean;
   items: Glasses[];
   configured: boolean;
+  storageError: string;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false),
@@ -81,6 +83,11 @@ export default function AdminPanel({
         <p className="muted">
           Upload your own frames and make them available for virtual try-on.
         </p>
+        {authenticated && storageError && (
+          <p className="notice" role="status">
+            {storageError}
+          </p>
+        )}
         {!authenticated ? (
           <form className="admin-form login" onSubmit={submit}>
             <h2>Admin sign in</h2>
@@ -145,7 +152,7 @@ export default function AdminPanel({
                 inside lenses. Turn it off for transparent images or white
                 frames. Angled photos and busy backgrounds need editing first.
               </p>
-              <button disabled={busy}>
+              <button disabled={busy || !!storageError}>
                 {busy ? "Uploading…" : "Upload glasses ↗"}
               </button>
             </form>
@@ -156,7 +163,15 @@ export default function AdminPanel({
               </div>
               {items.map((item) => (
                 <div className="admin-row" key={item.id}>
-                  {item.imageUrl && <Image src={item.imageUrl} alt={item.name} width={65} height={45} unoptimized />}
+                  {item.imageUrl && (
+                    <Image
+                      src={item.imageUrl}
+                      alt={item.name}
+                      width={65}
+                      height={45}
+                      unoptimized
+                    />
+                  )}
                   <div>
                     <strong>{item.name}</strong>
                     <small>
@@ -165,7 +180,7 @@ export default function AdminPanel({
                   </div>
                   <button
                     className="secondary"
-                    disabled={busy}
+                    disabled={busy || !!storageError}
                     onClick={() => remove(item.id)}
                   >
                     Remove

@@ -4,7 +4,7 @@ Next.js glasses fitting room based on the Jeeliz reference in D:/tryon, with a p
 
 ## Run
 
-1. Copy .env.example to .env.local and set your private ADMIN_PASSWORD.
+1. Copy .env.example to .env.local and configure ADMIN_PASSWORD, MONGODB_URI, MONGODB_DB (defaults to glasstryon), CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET. Keep these credentials server-side. Use a MongoDB Atlas connection string or your own MongoDB deployment.
 2. Run npm install then npm run dev.
 3. Open http://localhost:3000 and http://localhost:3000/admin.
 
@@ -22,7 +22,15 @@ Choose **Try a face photo** in the fitting room and upload a clear, front-facing
 
 ## Persistent storage
 
-Catalog and images are stored under data/ (ignored by Git). Set GLASSES_DATA_DIR to use another location. Deploy on a Node server with writable durable storage, or mount a persistent volume; ephemeral serverless storage will not retain uploads. Back up this directory. Removing a frame removes its catalog entry; original assets remain on disk. Admin sessions expire after eight hours and password changes invalidate them. Production requires HTTPS.
+Glasses metadata is stored in the MongoDB `glasses` collection. Product images are uploaded to Cloudinary, with their HTTPS URLs and Cloudinary public IDs saved in MongoDB. New uploads do not read or write the local data folder. MongoDB connections are pooled and reused. If database insertion fails after an image upload, the application attempts to remove the unused Cloudinary image. Removing uploaded glasses removes the Cloudinary asset and MongoDB record. Built-in 3D demo visibility is persisted in MongoDB. Product image requests use anonymous CORS so face-photo canvas previews and downloads work with Cloudinary. Customer face photos remain local to the browser.
+
+Without MongoDB configuration or connectivity, the public fitting room remains usable with samples; admin displays the storage setup error. Uploads require both services to be configured. The database must allow connections from your app server. Deploy on a Node runtime; a writable local volume is no longer required. Admin sessions expire after eight hours and password changes invalidate them. Production requires HTTPS.
+
+### Migrate existing local uploads
+
+After configuring the credentials, run `npm run migrate:storage`. This reads the original `data/catalog.json`, uploads each product image to Cloudinary, and inserts the corresponding MongoDB record using the original ID. It skips records already migrated and preserves the original local files. If your legacy data is in another location, use `npm run migrate:storage -- D:/your/old/data`. Old `/api/assets/...` links redirect to the migrated Cloudinary URL. Run the migration before expecting your previous local uploads to appear in the new catalog. Removed built-in demos are preserved as hidden records. If MongoDB's final deletion fails after Cloudinary removal, the record stays hidden with `pendingDelete`; retry the DELETE request with its ID to finish cleanup.
+
+Integration references: [MongoDB Node driver](https://www.mongodb.com/docs/drivers/node/current/connect/mongoclient/) and [Cloudinary Node uploads](https://cloudinary.com/documentation/node_image_and_video_upload).
 
 ## Validation
 
@@ -30,3 +38,4 @@ Catalog and images are stored under data/ (ignored by Git). Set GLASSES_DATA_DIR
 
 npm run lint
 npm run build
+npm test

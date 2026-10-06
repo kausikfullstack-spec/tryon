@@ -1,6 +1,4 @@
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
-import path from "node:path";
-import { randomUUID } from "node:crypto";
+import { database } from "./mongodb";
 
 export type Glasses = {
   id: string;
@@ -11,10 +9,15 @@ export type Glasses = {
   removeWhite?: boolean;
   demo?: boolean;
 };
-export const dataDir = path.resolve(
-  /* turbopackIgnore: true */ process.env.GLASSES_DATA_DIR ||
-    path.join(process.cwd(), "data"),
-);
+export type StoredGlasses = Glasses & {
+  _id: string;
+  cloudinaryPublicId?: string;
+  hidden?: boolean;
+  pendingDelete?: boolean;
+};
+export async function glassesCollection() {
+  return (await database()).collection<StoredGlasses>("glasses");
+}
 export const samples: Glasses[] = [
   {
     id: "aviator",
@@ -36,28 +39,38 @@ export const samples: Glasses[] = [
   },
 ];
 export async function catalog(): Promise<Glasses[]> {
-  try {
-    return JSON.parse(
-      await readFile(path.join(dataDir, "catalog.json"), "utf8"),
-    );
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return samples;
-    throw error;
-  }
+  const stored = await (
+    await glassesCollection()
+  )
+    .find({})
+    .sort({ _id: 1 })
+    .toArray();
+  const records = new Map(stored.map((item) => [item.id, item]));
+  const visibleSamples = samples.filter((item) => !records.has(item.id));
+  return [
+    ...visibleSamples,
+    ...stored
+      .filter((item) => !item.hidden && !item.pendingDelete)
+      .map((item) => ({
+        id: item.id,
+        name: item.name,
+        category: item.category,
+        sku: item.sku,
+        imageUrl: item.imageUrl,
+        removeWhite: item.removeWhite,
+        demo: item.demo,
+      })),
+  ];
 }
-let queue = Promise.resolve();
-export function updateCatalog(change: (items: Glasses[]) => Glasses[]) {
-  const operation = queue.then(async () => {
-    const items = change(await catalog());
-    await mkdir(dataDir, { recursive: true });
-    const temporary = path.join(dataDir, `${randomUUID()}.tmp`);
-    await writeFile(temporary, JSON.stringify(items, null, 2));
-    await rename(temporary, path.join(dataDir, "catalog.json"));
-    return items;
-  });
-  queue = operation.then(
-    () => {},
-    () => {},
-  );
-  return operation;
+export async function catalogState() {
+  try {
+    return { items: await catalog(), error: "" };
+  } catch {
+    return {
+      items: samples,
+      error: process.env.MONGODB_URI
+        ? "MongoDB is unavailable. Check your connection settings and database access."
+        : "Set MONGODB_URI in .env.local to enable catalog storage.",
+    };
+  }
 }
