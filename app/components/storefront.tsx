@@ -81,12 +81,21 @@ export default function Storefront({ items }: { items: Glasses[] }) {
   return (
     <>
       <header className="site-header">
-        <Link className="brand" href="/">
-          glass<span>tryon</span>
-          <b>●</b>
-        </Link>
+        <div className="header-branding">
+          <Link className="brand" href="/">
+            glass<span>tryon</span>
+            <b>●</b>
+          </Link>
+          <p className="header-tagline">
+            A little style. A whole new perspective.
+          </p>
+        </div>
         <nav>
-          <span>Find your everyday frame</span>
+          <div className="navbar-credit">
+            Crafted by <strong>Kausik</strong>
+            <span aria-hidden="true">✦</span>
+          </div>
+          <span>Your next favorite look starts here.</span>
           <Link className="secondary" href="/admin">
             Admin panel ↗
           </Link>
@@ -378,10 +387,24 @@ export default function Storefront({ items }: { items: Glasses[] }) {
           </aside>
         </div>
         <footer className="site-footer">
-          <span>GLASSTRYON / SEE WHAT SUITS YOU</span>
-          <span>
-            Photo frames track your face in 2D. Fit is a visual preview.
-          </span>
+          <div className="footer-message">
+            <span className="eyebrow">GLASSTRYON / FIND YOUR FRAME</span>
+            <p>
+              See the possibilities.
+              <br />
+              Wear your confidence.
+            </p>
+            <small>Photo try-on is a 2D visual preview.</small>
+          </div>
+          <div className="footer-credit">
+            <span className="credit-spark" aria-hidden="true">
+              ✦
+            </span>
+            <p>
+              Crafted by <strong>Kausik</strong>
+            </p>
+            <span>Made with care, for a clearer view.</span>
+          </div>
         </footer>
       </main>
     </>
