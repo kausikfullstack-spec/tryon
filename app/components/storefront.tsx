@@ -43,14 +43,16 @@ export default function Storefront({ items }: { items: Glasses[] }) {
     [photoUrl, setPhotoUrl] = useState(""),
     [photoError, setPhotoError] = useState("");
   const uploadedFrames = items.filter((item) => item.imageUrl);
-  const collection =
-    mode === "photo"
-      ? uploadedFrames.length
-        ? uploadedFrames
-        : photoSamples
-      : items;
+  // Keep the real catalog visible in both modes; fallback styles are additional.
+  const collection = [
+    ...items,
+    ...(mode === "photo" && !uploadedFrames.length ? photoSamples : []),
+  ];
+  const compatibleFrames =
+    mode === "photo" ? collection.filter((item) => item.imageUrl) : collection;
   const selected =
-    collection.find((item) => item.id === choice?.id) || collection[0];
+    compatibleFrames.find((item) => item.id === choice?.id) ||
+    compatibleFrames[0];
   useEffect(
     () => () => {
       if (photoUrl) URL.revokeObjectURL(photoUrl);
@@ -188,7 +190,7 @@ export default function Storefront({ items }: { items: Glasses[] }) {
                       if (frame) setSelected(frame);
                     }}
                   >
-                    {collection.map((item) => (
+                    {compatibleFrames.map((item) => (
                       <option key={item.id} value={item.id}>
                         {item.name}
                         {item.demo ? " (sample)" : ""}
@@ -320,7 +322,13 @@ export default function Storefront({ items }: { items: Glasses[] }) {
                 <button
                   key={item.id}
                   className={`frame-card ${selected?.id === item.id ? "chosen" : ""}`}
-                  onClick={() => setSelected(item)}
+                  onClick={() => {
+                    setSelected(item);
+                    if (mode === "photo" && !item.imageUrl) {
+                      setMode("camera");
+                      setActive(false);
+                    }
+                  }}
                 >
                   <div className="frame-art">
                     {item.imageUrl ? (
@@ -346,6 +354,9 @@ export default function Storefront({ items }: { items: Glasses[] }) {
                             ? "Photo sample"
                             : "Your upload"}
                       </small>
+                      {mode === "photo" && !item.imageUrl && (
+                        <small>Try with camera</small>
+                      )}
                     </span>
                     <span className="select-circle">
                       {selected?.id === item.id ? "✓" : "↗"}
