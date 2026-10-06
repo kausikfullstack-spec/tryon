@@ -26,5 +26,7 @@ Catalog and images are stored under data/ (ignored by Git). Set GLASSES_DATA_DIR
 
 ## Validation
 
+`node --test tests/mediapipe-logs.test.mjs` verifies that the native WASM logger routes the XNNPACK startup message to the informational console while preserving actual errors. The locally hosted MediaPipe loader files include this narrow correction so Next.js does not show a false error overlay. If you replace these files when upgrading MediaPipe, reapply it with `node scripts/patch-mediapipe-logs.mjs`.
+
 npm run lint
 npm run build
